@@ -26,13 +26,19 @@ class Result {
   html() {
     let response = this._fastbootInfo.response;
     let statusCode = response && this._fastbootInfo.response.statusCode;
+    let replaceOpenTags = true;
 
     if (statusCode === 204) {
+      replaceOpenTags = false;
+
       this._html = '';
       this._head = '';
       this._body = '';
+
     } else if (statusCode >= 300 && statusCode <= 399) {
       let location = response.headers.get('location');
+
+      replaceOpenTags = false;
 
       this._html = '<body><!-- EMBER_CLI_FASTBOOT_BODY --></body>';
       this._head = '';
@@ -41,6 +47,12 @@ class Result {
       if (location) {
         this._body = `<h1>Redirecting to <a href="${location}">${location}</a></h1>`;
       }
+    }
+
+    if (replaceOpenTags) {
+      this._html = this._html.replace('<html>', HTMLSerializer.openTag(this._doc.documentElement));
+      this._html = this._html.replace('<head>', HTMLSerializer.openTag(this._doc.head));
+      this._html = this._html.replace('<body>', HTMLSerializer.openTag(this._doc.body));
     }
 
     return Promise.resolve(insertIntoIndexHTML(this._html, this._head, this._body));
